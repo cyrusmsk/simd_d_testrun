@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/simd_d_testrun
+simd_d_testrun.so
+simd_d_testrun.dylib
+simd_d_testrun.dll
+simd_d_testrun.a
+simd_d_testrun.lib
+simd_d_testrun-test-*
+*.exe
+*.o
+*.obj
+*.lst
