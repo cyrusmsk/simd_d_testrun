@@ -23,7 +23,7 @@ jobs:
             - uses: actions/upload-artifact@v3
               with:
                 name: build
-                path: appbuild/*
+                path: appbuild/**/*
     bench:
         name: Run apps
         needs: [build]
