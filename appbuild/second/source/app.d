@@ -1,7 +1,8 @@
 // port from 2-i.rs
 
 import std;
-import inteli.emmintrin, inteli.tmmintrin, inteli.smmintrin;
+//import inteli.emmintrin, inteli.tmmintrin, inteli.smmintrin;
+import inteli;
 
 
 immutable size_t vSize = 16;

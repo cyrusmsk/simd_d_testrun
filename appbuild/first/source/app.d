@@ -5,7 +5,8 @@ import std.stdio : writeln;
 import std.stdint : int_fast8_t, int_fast64_t;
 import std.algorithm.mutation : bringToFront;
 import std.conv : to;
-import inteli.emmintrin, inteli.tmmintrin, inteli.smmintrin;
+//import inteli.emmintrin, inteli.tmmintrin, inteli.smmintrin;
+import inteli;
 
 alias smallInt = int_fast8_t;
 alias bigInt = int_fast64_t;
