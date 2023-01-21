@@ -12,6 +12,10 @@ jobs:
               uses: dlang-community/setup-dlang@v1
               with:
                 compiler: ldc-latest
+            - name: Build zero code
+              run: |
+                cd appbuild/zero
+                dub build --build=release --compiler=ldc2
             - name: Build first code
               run: |
                 cd appbuild/first
@@ -24,17 +28,9 @@ jobs:
               with:
                 name: build
                 path: appbuild/**/*
+            - name: Run zero app
+              run: /usr/bin/time appbuild/zero/zero 10
             - name: Run first app
-              run: /usr/bin/time appbuild/first/first 11
+              run: /usr/bin/time appbuild/first/first 10
             - name: Run second app
-              run: /usr/bin/time appbuild/second/second 11
-    # bench:
-    #     name: Run apps
-    #     needs: [build]
-    #     runs-on: ubuntu-latest
-    #     steps:
-    #         - uses: actions/checkout@v3
-    #         - name: Run first app
-    #           run: /usr/bin/time appbuild/first/first 11
-    #         - name: Run second app
-    #           run: /usr/bin/time appbuild/second/second 11
+              run: /usr/bin/time appbuild/second/second 10

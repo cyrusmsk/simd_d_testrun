@@ -8,6 +8,6 @@
 	},
 	"description": "App for testing SIMD work on GitHub actions",
 	"license": "MIT",
-	"name": "first",
+	"name": "zero",
     "dflags-ldc": ["-mattr=+sse3,+ssse3,+sse4.1,+sse4.2,+avx", "-mcpu=native"],
 }
