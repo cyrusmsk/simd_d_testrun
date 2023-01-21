@@ -4,7 +4,8 @@ on: [push, pull_request]
 jobs:
     build:
         name: Dub build apps
-        runs-on: ubuntu-latest
+        runs-on: 
+          ubuntu-latest
         steps:
             - uses: actions/checkout@v3
             - name: Install D compiler
@@ -19,18 +20,17 @@ jobs:
               run: |
                 cd appbuild/second
                 dub build --build=release --compiler=ldc2
-             - uses: actions/upload-artifact@v3
-             if: github.ref == 'refs/heads/main'
-               with:
-               name: build
-               path: appbuild/*
-  bench:
-      name: Run apps
-      needs: [build]
-      runs-on: ubuntu-latest
-      steps:
-          - uses: actions/checkout@v3
-          - name: Run first app
-            run: /usr/bin/time appbuild/first/first 11
-          - name: Run second app
-            run: /usr/bin/time appbuild/second/second 11
+            - uses: actions/upload-artifact@v3
+              with:
+                name: build
+                path: appbuild/*
+    bench:
+        name: Run apps
+        needs: [build]
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Run first app
+              run: /usr/bin/time appbuild/first/first 11
+            - name: Run second app
+              run: /usr/bin/time appbuild/second/second 11
