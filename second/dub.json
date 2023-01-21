@@ -1,0 +1,13 @@
+{
+	"authors": [
+		"Sergei Giniatulin"
+	],
+	"copyright": "Copyright © 2023, Sergei Giniatulin",
+	"dependencies": {
+		"intel-intrinsics": "~>1.11.1"
+	},
+	"description": "App for testing SIMD work on GitHub actions",
+	"license": "MIT",
+	"name": "simd_d_testrun"
+    "dflags-ldc": ["-mattr=+sse3,+ssse3,+sse4.1", "-mcpu=native"],
+}
