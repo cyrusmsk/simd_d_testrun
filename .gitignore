@@ -1,15 +1,26 @@
+# Compiled Object files
+*.o
+*.obj
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# IDE
+*.sublime-project
+*.sublime-workspace
+
+*.lst
+
+# Compiled Static libraries
+*.a
+*.lib
+
+# Executables
+*.exe
+
+# DUB
 .dub
 docs.json
 __dummy.html
-docs/
-/simd_d_testrun
-simd_d_testrun.so
-simd_d_testrun.dylib
-simd_d_testrun.dll
-simd_d_testrun.a
-simd_d_testrun.lib
-simd_d_testrun-test-*
-*.exe
-*.o
-*.obj
-*.lst
