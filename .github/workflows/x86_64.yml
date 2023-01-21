@@ -20,7 +20,6 @@ jobs:
               run: |
                 cd ./second
                 dub build --build=release --compiler=ldc2
-
   bench:
       name: Run apps
       needs: [build]
