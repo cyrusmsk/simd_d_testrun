@@ -24,13 +24,17 @@ jobs:
               with:
                 name: build
                 path: appbuild/**/*
-    bench:
-        name: Run apps
-        needs: [build]
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v3
             - name: Run first app
               run: /usr/bin/time appbuild/first/first 11
             - name: Run second app
               run: /usr/bin/time appbuild/second/second 11
+    # bench:
+    #     name: Run apps
+    #     needs: [build]
+    #     runs-on: ubuntu-latest
+    #     steps:
+    #         - uses: actions/checkout@v3
+    #         - name: Run first app
+    #           run: /usr/bin/time appbuild/first/first 11
+    #         - name: Run second app
+    #           run: /usr/bin/time appbuild/second/second 11
