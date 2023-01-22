@@ -15,15 +15,15 @@ jobs:
             - name: Build zero code
               run: |
                 cd appbuild/zero
-                dub build --build=release --compiler=ldc2
+                dub build -b release-nobounds -a x86_64 --combined --compiler=ldc2
             - name: Build first code
               run: |
                 cd appbuild/first
-                dub build --build=release --compiler=ldc2
+                dub build -b release-nobounds -a x86_64 --combined --compiler=ldc2
             - name: Build second code
               run: |
                 cd appbuild/second
-                dub build --build=release --compiler=ldc2
+                dub build -b release-nobounds -a x86_64 --combined --compiler=ldc2
             - uses: actions/upload-artifact@v3
               with:
                 name: build
