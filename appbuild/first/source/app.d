@@ -1,175 +1,213 @@
-// Based on 1-im.cpp implementation
-//@safe:
+// port from 8-m.rs and 1.zig
+import std;
+import std.outbuffer: OutBuffer;
 
-import std.stdio : writeln;
-import std.stdint : int_fast8_t, int_fast64_t;
-import std.algorithm.mutation : bringToFront;
-import std.conv : to;
-//import inteli.emmintrin, inteli.tmmintrin, inteli.smmintrin;
-import inteli;
+alias Map = uint[Nullable!Code];
+static double hundreed = 100.0;
 
-alias smallInt = int_fast8_t;
-alias bigInt = int_fast64_t;
-
-immutable static smallInt maxN = 16;
-immutable static int maxBlocks = 24;
-
-class Masks
+static struct Code
 {
-    __m128i[16] masksReverse;
-    __m128i[16] masksShift;
+    ulong data;
 
-    this()
+    void push(ubyte c, ulong mask)
     {
-        masksReverse = [
-        __m128i.init,
-        _mm_setr_epi8(1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(2, 1, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(3, 2, 1, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(5, 4, 3, 2, 1, 0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(6, 5, 4, 3, 2, 1, 0, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(7, 6, 5, 4, 3, 2, 1, 0, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(8, 7, 6, 5, 4, 3, 2, 1, 0, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 12, 13, 14, 15),
-        _mm_setr_epi8(12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 13, 14, 15),
-        _mm_setr_epi8(13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 14, 15),
-        _mm_setr_epi8(14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 15),
-        _mm_setr_epi8(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0),
-    ];
-    masksShift = [
-        __m128i.init,
-        _mm_setr_epi8(1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 0, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 0, 7, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 0, 8, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 0, 9, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 10, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 0, 11, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 12, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0, 13, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0, 14, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 0, 15),
-        _mm_setr_epi8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0),
-    ];
+        data = ((data << 2) | cast(ulong) c) & mask;
+    }
+
+    static Nullable!Code fromStr(ubyte[] s)
+    {
+        auto mask = Code.makeMask(s.length);
+        auto res = Code(0);
+        foreach (c; s)
+            res.push(Code.encodeByte(c), mask);
+        return nullable(res);
+    }
+
+    string toStr(size_t frame)
+    {
+        char[] res;
+        auto code = this.data;
+        ubyte c;
+        foreach (_; 0 .. frame)
+        {
+            switch (cast(ubyte) code & 0b11)
+            {
+            case Code.encodeByte('A'):
+                c = 'A';
+                break;
+            case Code.encodeByte('C'):
+                c = 'C';
+                break;
+            case Code.encodeByte('G'):
+                c = 'G';
+                break;
+            case Code.encodeByte('T'):
+                c = 'T';
+                break;
+            default:
+                break;
+            }
+            res ~= c;
+            code >>= 2;
+        }
+        return cast(string) res.reverse;
+    }
+
+    pragma(inline, true)
+    static ulong makeMask(size_t frame)
+    {
+        return (1L << (2 * frame)) - 1L;
+    }
+
+    pragma(inline, true)
+    static ubyte encodeByte(ubyte c)
+    {
+        return (c >> 1) & 0b11;
     }
 }
 
-    
-
-// check better implementation. maybe CT, if it used in zig versions
-bigInt[maxN] computeFactorials(smallInt n)
+static struct Iter
 {
-    bigInt[maxN] factorials;
-    factorials[0] = 1;
-    for (smallInt i = 1; i <= n; ++i)
-        factorials[i] = factorials[i - 1] * i;
-    return factorials;
-}
+    // asyncBuf try
+    size_t i = 0;
+    ubyte[] input;
+    Nullable!Code code;
+    ulong mask;
 
-int[2] getBlocksAndSize(smallInt n, ref bigInt[maxN] factorials)
-{
-    int blocks = maxBlocks;
-    if (blocks > factorials[n])
-    blocks = 1;
-    int blockSize = cast(int) factorials[n] / blocks;
-    return [blocks, blockSize];
-}
-
-bigInt[maxN] createCount(smallInt n, bigInt start, ref bigInt[maxN] factorials)
-{
-    bigInt[maxN] count;
-    for (smallInt i = cast(smallInt)(n - 1); i >= 0; i--)
+    this(ubyte[] input, size_t frame)
     {
-        bigInt d = start / factorials[i];
-        start = start % factorials[i];
-        count[i] = d;
+        const mask = Code.makeMask(frame);
+        Nullable!Code tmpCode = Code(0);
+        foreach (c; input[0 .. frame - 1])
+            tmpCode.get.push(c, mask);
+        this.mask = mask;
+        this.code = tmpCode;
+        this.input = input[frame - 1 .. $];
     }
-    return count;
-}
 
-__m128i createCurrent(smallInt n, ref bigInt[maxN] count)
-{
-    align(16) smallInt[maxN] currentAux = [
-        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
-    ];
-    for (smallInt i = cast(smallInt)(n - 1); i >= 0; --i)
-        bringToFront(currentAux[0 .. count[i]], currentAux[count[i] .. i + 1]);
-    __m128i current = _mm_load_si128(cast(__m128i*)(currentAux.ptr));
-    return current;
-}
-
-pragma(inline, true):
-__m128i incrementPermutation(ref bigInt[maxN] count, __m128i current, ref Masks masks)
-{
-    for (smallInt i = 1;; ++i)
+    Nullable!Code next()
     {
-        current = _mm_shuffle_epi8(current, masks.masksShift[i]);
-        if (++count[i] <= i)
-        break;
-        count[i] = 0;
+        if (this.i >= this.input.length)
+            return Nullable!Code();
+        const c = this.input[this.i];
+        this.code.get.push(c, this.mask);
+        this.i += 1;
+        return this.code;
     }
-    return current;
 }
 
-pragma(inline, true):
-__m128i reverse(__m128i x, smallInt idx, ref Masks masks)
+Map genMap(Tuple!(ubyte[], size_t) t)
 {
-    return _mm_shuffle_epi8(x, masks.masksReverse[idx]);
+    Map myMap;
+    auto iter = Iter(t[0], t[1]);
+    auto code = iter.next();
+    while (!code.isNull)
+    {
+        myMap.update(code,
+            () => 1,
+            (ref uint v) { v += 1; });
+        code = iter.next();
+    }
+    return myMap;
+}
+
+struct CountCode
+{
+    ulong count;
+    Nullable!Code code;
+}
+
+void printMap(size_t self, Map myMap, ref OutBuffer buf)
+{
+    CountCode[] v;
+    ulong total;
+    uint count;
+    foreach (pair; myMap.byPair)
+    {
+        total += pair.value;
+        v ~= CountCode(pair.value, pair.key);
+    }
+    alias asc = (a, b) =>
+        a.count < b.count ||
+        (a.count == b.count && b.code.get.data < a.code.get.data);
+
+    v.sort!(asc);
+    auto i = v.length;
+    i--; // try just for loop here
+    while (true)
+    {
+        auto cc = v[i];
+        buf.writefln("%s %.3f", cc.code.get.toStr(self), cast(double) cc.count / cast(
+                double) total * hundreed);
+        if (i == 0)
+            break;
+        i--;
+    }
+    buf.write("\n");
+}
+
+void printOcc(ubyte[] s, ref Map myMap, ref OutBuffer buf)
+{
+    auto tmp = Code.fromStr(s);
+    buf.writefln("%d\t%s", myMap.get(tmp, 0), cast(string) s);
+}
+
+pragma(inline, true)
+ubyte[] readInput(string[] args)
+{
+    immutable fileName = args.length > 1 ? args[1] : "25000_in";
+    string key = ">THREE";
+    ubyte[] res;
+
+    auto infile = File(args[1]);
+    uint linect = 0;
+    foreach (line; infile.byLine())
+    {
+        if (line.startsWith(key))
+            break;
+    }
+    foreach (line; infile.byLine())
+    {
+        res ~= (cast(ubyte[]) line)[0 .. $].map!(a => Code.encodeByte(a)).array;
+    }
+
+    return res;
 }
 
 void main(string[] args)
 {
-    immutable smallInt n = args[1].to!smallInt;
-    auto factorials = computeFactorials(n);
-    auto blockSize = getBlocksAndSize(n, factorials)[1];
+    auto buf1 = new OutBuffer();
+    auto buf2 = new OutBuffer();
 
-    smallInt maxFlips = 0;
-    bigInt checksum = 0;
-
-    for (bigInt blockStart = 0; blockStart < factorials[n]; blockStart += blockSize)
+    static ubyte[][5] occs = [
+        cast(ubyte[]) "GGTATTTTAATTTATAGT",
+        cast(ubyte[]) "GGTATTTTAATT",
+        cast(ubyte[]) "GGTATT",
+        cast(ubyte[]) "GGTA",
+        cast(ubyte[]) "GGT",
+    ];
+    auto input = readInput(args);
+    
+    alias myTaskType = Task!(run, uint[Nullable!(Code)] function(Tuple!(ubyte[], ulong)), Tuple!(ubyte[], ulong))*;
+    myTaskType[] calls;
+    foreach (i; 0 .. occs.length)
     {
-        Masks masks = new Masks();
-        bigInt[maxN] count = createCount(n, blockStart, factorials);
-
-        __m128i current = createCurrent(n, count);
-        __m128i currentStart = current;
-
-        smallInt first = cast(smallInt) _mm_extract_epi8(current, 0);
-
-        bigInt crtIdx = blockStart;
-        bigInt blockEnd = blockStart + blockSize;
-
-        while (crtIdx < blockEnd)
-        {
-            if (first > 0)
-            {
-                smallInt flips = 0;
-                while (first != 0)
-                {
-                    auto next = (*cast(char[16]*)(current.ptr))[first]; // or try Union here
-                    current = reverse(current, first, masks);
-                    first = cast(smallInt*) next;
-                    ++flips;
-                }
-
-                checksum += (crtIdx % 2) == 0 ? flips : -flips;
-
-                if (flips > maxFlips)
-                    maxFlips = flips;
-            }
-
-            current = incrementPermutation(count, currentStart, masks);
-            currentStart = current;
-
-            first = cast(smallInt) _mm_extract_epi8(current, 0);
-            ++crtIdx;
-        }
+        auto t = task(&genMap, tuple(input, occs[i].length));
+        t.executeInNewThread();
+        calls ~= t;
     }
-    writeln(cast(int) checksum, "\nPfannkuchen(", n, ") = ", cast(int) maxFlips);
+
+    Map myMap;
+
+    myMap = genMap(tuple(input, 1UL));
+    printMap(1, myMap, buf1);
+    myMap = genMap(tuple(input, 2UL));
+    printMap(2, myMap, buf1);
+
+    foreach (i; iota(4, -1, -1))
+    {
+        printOcc(occs[i], calls[i].yieldForce(), buf2);
+    }
+    write(buf1);
+    write(buf2);
 }

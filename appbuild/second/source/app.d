@@ -1,122 +1,213 @@
-// port from 2-i.rs
-
+// port from 8-m.rs and 1.zig
 import std;
-//import inteli.emmintrin, inteli.tmmintrin, inteli.smmintrin;
-import inteli;
+import std.outbuffer : OutBuffer;
 
+alias Map = uint[Nullable!Code];
+static double hundreed = 100.0;
 
-immutable size_t vSize = 16;
-alias vItem = ubyte;
-alias V = vItem[vSize];
+static struct Code
+{
+    ulong data;
 
-static immutable NEXT_PERM_MASKS = nextPermMasks();
-static immutable REVERSE_MASKS = reverseMasks();
-
-V shuffle(V a, V mask) {
-    V r;
-    foreach (i; 0 .. vSize)
-        r[i] = a[mask[i]]; // mb need cast
-    return r;
-}
-
-__m128i simd_shuffle(__m128i a, __m128i mask) {
-    return _mm_shuffle_epi8(a, mask);
-}
-
-V reverseMask(vItem n) {
-    V v = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-    foreach(i; 0 .. n)
-        v[i] = cast(vItem)(n - i - 1);
-    return v;
-}
-
-V rotateMask(vItem n) {
-    V v = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-    foreach(i; 0 .. n)
-        v[i] = cast(vItem)((i + 1) % n);
-    return v;
-}
-
-V[vSize] reverseMasks() {
-    V[vSize] v;
-    foreach(i; 0 .. vSize)
-        v[i] = reverseMask(cast(vItem) i);
-    return v;
-}
-
-V nextPermMask(vItem n) {
-    V v = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
-    foreach(i; 2 .. n + 1)
-        v = shuffle(v, rotateMask(cast(vItem)i));
-    return v;
-}
-
-V[vSize] nextPermMasks() {
-    V[vSize] v;
-    size_t i = 0;
-    while (i < vSize) {
-        v[i] = nextPermMask(cast(vItem) i);
-        i++;
+    void push(ubyte c, ulong mask)
+    {
+        data = ((data << 2) | cast(ulong) c) & mask;
     }
-    return v;
-}
 
-uint pfannkuchen(__m128i perm) { // try fat pointer
-    uint flipCount = 0u;
-    auto a = perm;
-    while (true) {
-        const k = _mm_extract_epi8(a, 0);
-        if (k == 0)
-            return flipCount;
-        a = simd_shuffle(a, toMask(REVERSE_MASKS[cast(size_t) k + 1]));
-        flipCount += 1;
+    static Nullable!Code fromStr(ubyte[] s)
+    {
+        auto mask = Code.makeMask(s.length);
+        auto res = Code(0);
+        foreach (c; s)
+            res.push(Code.encodeByte(c), mask);
+        return nullable(res);
     }
-}
 
-__m128i toMask(V v) {
-    return _mm_setr_epi8(
-            v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[12], v[13],
-            v[14], v[15]
-        );
-}
-
-Tuple!(int, uint) calculate(size_t n) {
-    uint maxFlipCount = 0u;
-    int checksum = 0;
-    auto perm = _mm_setr_epi8(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15);
-    V count = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
-    bool parity = 0;
-    while (true) {
-        auto flipCount = pfannkuchen(perm);
-        if (maxFlipCount < flipCount)
-            maxFlipCount = flipCount;
-        checksum += cast(int) flipCount * (1 - cast(int) parity * 2);
-        ubyte r;
-        bool end = true;
-        foreach(i, v; count[0 .. n]) {
-            if (v != 1) {
-                r = cast(ubyte) i;
-                end = false;
+    string toStr(size_t frame)
+    {
+        char[] res;
+        auto code = this.data;
+        ubyte c;
+        foreach (_; 0 .. frame)
+        {
+            switch (cast(ubyte) code & 0b11)
+            {
+            case Code.encodeByte('A'):
+                c = 'A';
+                break;
+            case Code.encodeByte('C'):
+                c = 'C';
+                break;
+            case Code.encodeByte('G'):
+                c = 'G';
+                break;
+            case Code.encodeByte('T'):
+                c = 'T';
+                break;
+            default:
                 break;
             }
+            res ~= c;
+            code >>= 2;
         }
-        if (end)
-            break;
-        perm = simd_shuffle(perm, toMask(NEXT_PERM_MASKS[r + 1]));
-        
-        count[r] -= 1;
-        ubyte i = 1;
-        while (i < r) {
-            count[i] = cast(ubyte) (i + 1); // in 2.zig i + 2
-            i++;
-        }
-        parity ^= 1;
+        return cast(string) res.reverse;
     }
-    return tuple(checksum, maxFlipCount);
+
+    pragma(inline, true)
+    static ulong makeMask(size_t frame)
+    {
+        return (1L << (2 * frame)) - 1L;
+    }
+
+    pragma(inline, true)
+    static ubyte encodeByte(ubyte c)
+    {
+        return (c >> 1) & 0b11;
+    }
 }
 
-void main(string[] args) {
-    const n = args[1].to!ubyte;
-    Tuple!(int, "checksum", uint, "maxFlipCount") ans = calculate(n);
-    writefln("%d\nPfannkuchen(%d) = %d", ans.checksum, n, ans.maxFlipCount);
+static struct codeRange
+{
+    size_t i = 0;
+    ubyte[] input;
+    Nullable!Code code;
+    ulong mask;
+
+    bool empty() {
+        return this.i >= this.input.length;
+    }
+
+    Nullable!Code front() {
+        const c = this.input[this.i];
+        this.code.get.push(c, this.mask);
+        return this.code;
+    }
+
+    void popFront() {
+        this.i += 1;
+    }
+
+    this(ubyte[] input, size_t frame)
+    {
+        const mask = Code.makeMask(frame);
+        Nullable!Code tmpCode = Code(0);
+        foreach (c; input[0 .. frame - 1])
+            tmpCode.get.push(c, mask);
+        this.mask = mask;
+        this.code = tmpCode;
+        this.input = input[frame - 1 .. $];
+    }
+}
+
+Map genMap(Tuple!(ubyte[], size_t) t)
+{
+    Map myMap;
+    foreach(code; codeRange(t[0], t[1]))
+    {
+        myMap.update(code,
+            () => 1,
+            (ref uint v) { v += 1; });
+    }
+    return myMap;
+}
+
+struct CountCode
+{
+    ulong count;
+    Nullable!Code code;
+}
+
+void printMap(size_t self, Map myMap, ref OutBuffer buf)
+{
+    CountCode[] v;
+    ulong total;
+    uint count;
+    foreach (pair; myMap.byPair)
+    {
+        total += pair.value;
+        v ~= CountCode(pair.value, pair.key);
+    }
+    alias asc = (a, b) =>
+        a.count < b.count ||
+        (a.count == b.count && b.code.get.data < a.code.get.data);
+
+    v.sort!(asc);
+
+    foreach (i; iota(cast(int)(v.length) - 1, -1, -1))
+    {
+        auto cc = v[i];
+        buf.writefln("%s %.3f", cc.code.get.toStr(self), cast(double) cc.count / cast(
+                double) total * hundreed);
+    }
+    buf.write("\n");
+}
+
+void printOcc(ubyte[] s, ref Map myMap, ref OutBuffer buf)
+{
+    auto tmp = Code.fromStr(s);
+    buf.writefln("%d\t%s", myMap.get(tmp, 0), cast(string) s);
+}
+
+ubyte[] readInput(string[] args)
+{
+    immutable fileName = args.length > 1 ? args[1] : "25000_in";
+    char key = '>';
+    ubyte[] res;
+    auto app = appender(&res);
+    app.reserve(65_000);
+    auto file = File(args[1]);
+    byte x = 3;
+    foreach (line; file.byLine())
+    {
+        if (line[0] == key)
+        x--;
+        else
+            continue;
+        if (x == 0)
+            break;
+    }
+    foreach (line; file.byLine())
+    {
+        app ~= (cast(ubyte[]) line)[0 .. $].map!(a => Code.encodeByte(a));
+    }
+
+    return res;
+}
+
+void main(string[] args)
+{
+    auto buf1 = new OutBuffer();
+    auto buf2 = new OutBuffer();
+
+    static ubyte[][5] occs = [
+        cast(ubyte[]) "GGTATTTTAATTTATAGT",
+        cast(ubyte[]) "GGTATTTTAATT",
+        cast(ubyte[]) "GGTATT",
+        cast(ubyte[]) "GGTA",
+        cast(ubyte[]) "GGT",
+    ];
+    auto input = readInput(args);
+
+    alias myTaskType = Task!(run, uint[Nullable!(Code)]function(Tuple!(ubyte[], ulong)), Tuple!(ubyte[], ulong))*;
+    myTaskType[] calls;
+    foreach (i; 0 .. occs.length)
+    {
+        auto t = task(&genMap, tuple(input, occs[i].length));
+        t.executeInNewThread();
+        calls ~= t;
+    }
+
+    Map myMap;
+
+    myMap = genMap(tuple(input, 1UL));
+    printMap(1, myMap, buf1);
+    myMap = genMap(tuple(input, 2UL));
+    printMap(2, myMap, buf1);
+
+    foreach (i; iota(4, -1, -1))
+    {
+        printOcc(occs[i], calls[i].yieldForce(), buf2);
+    }
+    write(buf1);
+    write(buf2);
 }
