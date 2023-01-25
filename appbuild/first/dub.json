@@ -4,7 +4,8 @@
 	],
 	"copyright": "Copyright © 2023, Sergei Giniatulin",
 	"dependencies": {
-		"intel-intrinsics": "~>1.11.1"
+		"intel-intrinsics": "~>1.11.1",
+        "asdf": "~>0.7.15"
 	},
 	"description": "App for testing SIMD work on GitHub actions",
 	"license": "MIT",
