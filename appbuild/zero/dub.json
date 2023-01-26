@@ -5,7 +5,8 @@
 	"copyright": "Copyright © 2023, Sergei Giniatulin",
 	"dependencies": {
 		"intel-intrinsics": "~>1.11.1",
-        "asdf": "~>0.7.15"
+        "asdf": "~>0.7.15",
+        "mir-algorithm": {"version": "c428a26125976c781905b3afb0fe17c43613ae8a", "repository": "git+https://github.com/cyrusmsk/mir-algorithm.git", "default": true},
 	},
 	"description": "App for testing SIMD work on GitHub actions",
 	"license": "MIT",
