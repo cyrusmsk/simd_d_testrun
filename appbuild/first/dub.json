@@ -6,5 +6,5 @@
 	"description": "App for testing SIMD work on GitHub actions",
 	"license": "MIT",
 	"name": "first",
-    "dflags-ldc": ["-flto=thin", "-mcpu=native", "-defaultlib=phobos2-ldc-lto,druntime-ldc-lto", "-link-defaultlib-shared=false"],
+    "dflags-ldc": ["-mcpu=native"],
 }
