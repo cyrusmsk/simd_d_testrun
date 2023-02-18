@@ -6,6 +6,7 @@
 	"dependencies": {
 		"arsd-official:cgi": "~master"
 	},
+    "subConfigurations": {"arsd-official:cgi": "embedded_httpd_hybrid"},
 	"description": "A minimal D application.",
 	"license": "proprietary",
 	"name": "zero"
