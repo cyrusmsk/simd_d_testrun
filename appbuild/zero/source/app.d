@@ -33,7 +33,8 @@ int main(string[] args)
     auto rnd = Random(unpredictableSeed);
     auto port = uniform(30000, 40000, rnd);
     string api = "127.0.0.1:"~to!string(port)~"/";
-    RequestServer server = RequestServer("127.0.0.1", cast(ushort) port, false);
+    RequestServer server = RequestServer("127.0.0.1", cast(ushort) port);
+    server.useFork = false;
     auto tid = spawn(&startServer, server);
     auto init = iota(1,n + 1,1).map!(a => tuple(api, a));
     auto res = taskPool.amap!reqSend(init, n);
