@@ -3,8 +3,10 @@
 		"Sergei Giniatulin"
 	],
 	"copyright": "Copyright © 2023, Sergei Giniatulin",
-	"description": "App for testing SIMD work on GitHub actions",
-	"license": "MIT",
-	"name": "zero",
-    "dflags-ldc": ["-mcpu=native"],
+	"dependencies": {
+		"arsd-official:cgi": "~master"
+	},
+	"description": "A minimal D application.",
+	"license": "proprietary",
+	"name": "zero"
 }

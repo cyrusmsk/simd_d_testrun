@@ -16,27 +16,9 @@ jobs:
               run: |
                 cd appbuild/zero
                 dub build -b release-nobounds -a x86_64 --combined --compiler=ldc2
-            - name: Build first code
-              run: |
-                cd appbuild/first
-                dub build -b release-nobounds -a x86_64 --combined --compiler=ldc2
-            - name: Build second code
-              run: |
-                cd appbuild/second
-                dub build -b release-nobounds -a x86_64 --combined --compiler=ldc2
-            - name: Build third code
-              run: |
-                cd appbuild/third
-                dub build -b release-nobounds -a x86_64 --combined --compiler=ldc2
             - uses: actions/upload-artifact@v3
               with:
                 name: build
                 path: appbuild/**/*
             - name: Run zero app
-              run: /usr/bin/time appbuild/zero/zero appbuild/2500000_in
-            - name: Run first app
-              run: /usr/bin/time appbuild/first/first appbuild/2500000_in
-            - name: Run second app
-              run: /usr/bin/time appbuild/second/second appbuild/2500000_in
-            - name: Run third app
-              run: /usr/bin/time appbuild/third/third appbuild/2500000_in
+              run: /usr/bin/time appbuild/zero/zero 100
