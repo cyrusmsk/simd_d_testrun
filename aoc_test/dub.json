@@ -1,0 +1,9 @@
+{
+	"authors": [
+		"Sergei Giniatulin"
+	],
+	"copyright": "Copyright © 2023, Sergei Giniatulin",
+	"description": "Bench vs C++",
+	"license": "MIT",
+	"name": "aoc_test"
+}
